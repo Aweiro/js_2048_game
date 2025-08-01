@@ -94,6 +94,7 @@ class Game {
           state[key][num - 1] = 0;
           this.score += +state[key][num];
           state[key] = removeZeros(state[key]);
+          num--;
         }
       }
 
@@ -167,6 +168,7 @@ class Game {
           state[key][num - 1] = 0;
           this.score += +state[key][num];
           state[key] = removeZeros(state[key]);
+          num--;
         }
       }
 
