@@ -9,13 +9,17 @@ const startButton = document.querySelector('.button');
 startButton.addEventListener('click', () => {
   if (startButton.matches('.start')) {
     game.start();
+
+    startButton.classList.remove('start');
+    startButton.classList.add('restart');
+    startButton.textContent = 'Restart';
   } else {
     game.restart();
-  }
 
-  startButton.classList.remove('start');
-  startButton.classList.add('restart');
-  startButton.textContent = 'Restart';
+    startButton.classList.remove('restart');
+    startButton.classList.add('start');
+    startButton.textContent = 'Start';
+  }
 });
 
 document.addEventListener('keydown', (e) => {

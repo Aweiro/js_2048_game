@@ -23,31 +23,176 @@ class Game {
   constructor(initialState) {
     // eslint-disable-next-line no-console
     console.log(initialState);
-    this.gameField = document.querySelector('.game-field>tbody');
+
+    const board = [
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ];
+
+    this.score = 0;
+    this.status = 'idle';
+    this.state = board;
   }
 
   moveLeft() {
-    this.move('left');
+    if (this.status !== 'playing') {
+      return;
+    }
+
+    const state = this.state;
+    const oldState = structuredClone(this.state);
+
+    function removeZeros(arr) {
+      return arr.filter((el) => el !== 0);
+    }
+
+    for (let key = 0; key < state.length; key++) {
+      const keyLength = state[key].length;
+
+      state[key] = removeZeros(state[key]);
+
+      for (let num = 0; num < state[key].length; num++) {
+        if (state[key][num] === state[key][num + 1]) {
+          state[key][num] *= 2;
+          state[key][num + 1] = 0;
+          this.score += +state[key][num];
+          state[key] = removeZeros(state[key]);
+        }
+      }
+
+      for (let i = state[key].length; i < keyLength; i++) {
+        state[key].push(0);
+      }
+    }
+
+    this.checkChangesState(oldState);
+
+    this.updateUI();
   }
   moveRight() {
-    this.move('right');
+    if (this.status !== 'playing') {
+      return;
+    }
+
+    const state = this.state;
+    const oldState = structuredClone(this.state);
+
+    function removeZeros(arr) {
+      return arr.filter((el) => el !== 0);
+    }
+
+    for (let key = 0; key < state.length; key++) {
+      const keyLength = state[key].length;
+
+      state[key] = removeZeros(state[key]);
+
+      for (let num = state[key].length; num > 0; num--) {
+        if (state[key][num] === state[key][num - 1]) {
+          state[key][num] *= 2;
+          state[key][num - 1] = 0;
+          this.score += +state[key][num];
+          state[key] = removeZeros(state[key]);
+        }
+      }
+
+      for (let i = state[key].length; i < keyLength; i++) {
+        state[key].unshift(0);
+      }
+    }
+
+    this.checkChangesState(oldState);
+    this.updateUI();
   }
   moveUp() {
-    this.move('top');
+    if (this.status !== 'playing') {
+      return;
+    }
+
+    const state = this.state;
+    const oldState = structuredClone(this.state);
+
+    this.transpose(state);
+
+    function removeZeros(arr) {
+      return arr.filter((el) => el !== 0);
+    }
+
+    for (let key = 0; key < state.length; key++) {
+      const keyLength = state[key].length;
+
+      state[key] = removeZeros(state[key]);
+
+      for (let num = 0; num < state[key].length; num++) {
+        if (state[key][num] === state[key][num + 1]) {
+          state[key][num] *= 2;
+          state[key][num + 1] = 0;
+          this.score += +state[key][num];
+          state[key] = removeZeros(state[key]);
+        }
+      }
+
+      for (let i = state[key].length; i < keyLength; i++) {
+        state[key].push(0);
+      }
+    }
+    this.transpose(state);
+
+    this.checkChangesState(oldState);
+    this.updateUI();
   }
   moveDown() {
-    this.move('bottom');
+    if (this.status !== 'playing') {
+      return;
+    }
+
+    const state = this.state;
+    const oldState = structuredClone(this.state);
+
+    this.transpose(state);
+
+    function removeZeros(arr) {
+      return arr.filter((el) => el !== 0);
+    }
+
+    for (let key = 0; key < state.length; key++) {
+      const keyLength = state[key].length;
+
+      state[key] = removeZeros(state[key]);
+
+      for (let num = state[key].length; num > 0; num--) {
+        if (state[key][num] === state[key][num - 1]) {
+          state[key][num] *= 2;
+          state[key][num - 1] = 0;
+          this.score += +state[key][num];
+          state[key] = removeZeros(state[key]);
+        }
+      }
+
+      for (let i = state[key].length; i < keyLength; i++) {
+        state[key].unshift(0);
+      }
+    }
+    this.transpose(state);
+
+    this.checkChangesState(oldState);
+    this.updateUI();
   }
 
   /**
    * @returns {number}
    */
-  getScore() {}
+  getScore() {
+    document.querySelector('.game-score').textContent = this.score;
+  }
 
   /**
    * @returns {number[][]}
    */
-  getState() {}
+  getState() {
+    return this.state;
+  }
 
   /**
    * Returns the current game status.
@@ -59,413 +204,178 @@ class Game {
    * `win` - the game is won;
    * `lose` - the game is lost
    */
-  getStatus() {}
+  getStatus() {
+    if (this.status === 'idle') {
+      document.querySelector('.message-start').classList.add('hidden');
+      this.status = 'playing';
+    } else if (this.status === 'playing') {
+      document.querySelector('.message-lose').classList.add('hidden');
+      document.querySelector('.message-win').classList.add('hidden');
+      document.querySelector('.message-start').classList.remove('hidden');
+      this.status = 'idle';
+    } else if (this.status === 'lose') {
+      document.querySelector('.message-lose').classList.remove('hidden');
+      this.status = 'playing';
+    } else if (this.status === 'win') {
+      document.querySelector('.message-win').classList.remove('hidden');
+      // this.status = 'playing';
+    }
+  }
 
   /**
    * Starts the game.
    */
   start() {
-    this.newCell();
-    this.newCell();
+    this.addRandomTile();
+    this.getStatus();
+    this.updateUI();
   }
 
   /**
    * Resets the game.
    */
   restart() {
-    const allFieldCell = document.querySelectorAll('.active');
+    this.state = [
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ];
+    this.score = 0;
 
-    for (const key of allFieldCell) {
-      key.classList = 'field-cell';
-      key.textContent = '';
+    if (this.status === 'win') {
+      this.status = 'playing';
     }
 
-    this.start();
+    this.getStatus();
+    this.getScore();
+    this.updateUI();
   }
 
   // Add your own methods here
-  newCell() {
-    const gameField = document.querySelector('.game-field');
-    let attempts = 0;
-    let placed = false;
 
-    while (!placed && attempts < 10) {
-      const randomRow = Math.floor(Math.random() * 4);
-      const randomCell = Math.floor(Math.random() * 4);
-      const randomFieldCell = Math.floor(Math.random() * 2) * 2 + 2;
-      const currentFieldCell = gameField.rows[randomRow].cells[randomCell];
+  addRandomTile() {
+    const statusCopy = this.status;
 
-      // If the cell is empty, place the new cell
-      if (!currentFieldCell.matches('.active')) {
-        currentFieldCell.classList.add(
-          `field-cell--${randomFieldCell}`,
-          'active',
-        );
-        currentFieldCell.textContent = `${randomFieldCell}`;
-        placed = true;
+    function getRandom(isNumber = false) {
+      let randomNumber = Math.floor(Math.random() * 4);
+
+      if (isNumber && statusCopy === 'playing') {
+        randomNumber = Math.random();
+
+        if (randomNumber < 0.9) {
+          return 2;
+        } else {
+          return 4;
+        }
+      } else if (isNumber && statusCopy === 'idle') {
+        randomNumber = Math.floor(Math.random() * 2);
+
+        if (randomNumber === 0) {
+          return 2;
+        } else {
+          return 4;
+        }
+      } else {
+        return randomNumber;
       }
-      attempts++;
+    }
+
+    function isClear(board) {
+      let isValue = true;
+
+      while (isValue) {
+        const randomA = getRandom();
+        const randomB = getRandom();
+        const randomCell = board[randomA][randomB];
+
+        if (!randomCell) {
+          board[randomA][randomB] = getRandom(true);
+          isValue = false;
+        }
+      }
+    }
+
+    const stateFlatLength = this.state.flat().filter((el) => el !== 0).length;
+
+    if (stateFlatLength === 0) {
+      isClear(this.state);
+      isClear(this.state);
+    } else {
+      isClear(this.state);
     }
   }
 
-  move(direction) {
-    const gameField = this.gameField;
-    const fieldCells = [...document.querySelectorAll('.active')];
-    const activeFieldsArr = [];
+  checkChangesState(oldStateArr) {
+    const oldArr = oldStateArr.flat().join('');
+    const newArr = this.state.flat().join('');
+    const stateFlatLength = this.state.flat().filter((el) => el !== 0).length;
 
-    // переробити
-    for (const key of fieldCells) {
-      [...gameField.rows].map((element) => {
-        if ([...element.cells].indexOf(key) !== -1) {
-          activeFieldsArr.push([
-            [...gameField.rows].indexOf(element),
-            [...element.cells].indexOf(key),
-          ]);
+    if (oldArr !== newArr) {
+      this.addRandomTile(true);
+    } else if (stateFlatLength === 16) {
+      const grid = this.state;
+      let isTrue = false;
+
+      for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid.length; j++) {
+          const current = grid[i][j];
+
+          if (current === 0) {
+            isTrue = true;
+            break;
+          }
+
+          if (
+            (j + 1 < grid.length && current === grid[i][j + 1]) ||
+            (i + 1 < grid.length && current === grid[i + 1][j])
+          ) {
+            isTrue = true;
+          }
         }
-      });
+      }
+
+      if (!isTrue) {
+        this.status = 'lose';
+        this.getStatus();
+      }
+    }
+  }
+
+  updateUI() {
+    const allCells = document.querySelectorAll('.field-cell');
+
+    if (this.state.flat().some((t) => t === 2048)) {
+      this.status = 'win';
+      this.getStatus();
     }
 
-    for (const activeCell of activeFieldsArr) {
-      const activeRow = activeCell[0];
-      const activeColumn = activeCell[1];
-      const currentActive = gameField.rows[activeRow].cells[activeColumn];
-      const copyCurrentActive = currentActive.cloneNode(true);
+    for (let key = 0; key < allCells.length; key++) {
+      if (this.state.flat()[key]) {
+        allCells[key].textContent = this.state.flat()[key];
 
-      currentActive.classList = 'field-cell';
-      currentActive.textContent = '';
-
-      const currentActiveRow = gameField.rows[activeRow];
-
-      if (direction === 'right') {
-        if (!currentActiveRow.cells[3].matches('.active')) {
-          currentActiveRow.cells[3].replaceWith(copyCurrentActive);
-        } else if (!currentActiveRow.cells[2].matches('.active')) {
-          currentActiveRow.cells[2].replaceWith(copyCurrentActive);
-        } else if (!currentActiveRow.cells[1].matches('.active')) {
-          currentActiveRow.cells[1].replaceWith(copyCurrentActive);
-        } else {
-          currentActiveRow.cells[0].replaceWith(copyCurrentActive);
-        }
-      }
-
-      if (direction === 'left') {
-        if (!currentActiveRow.cells[0].matches('.active')) {
-          currentActiveRow.cells[0].replaceWith(copyCurrentActive);
-        } else if (!currentActiveRow.cells[1].matches('.active')) {
-          currentActiveRow.cells[1].replaceWith(copyCurrentActive);
-        } else if (!currentActiveRow.cells[2].matches('.active')) {
-          currentActiveRow.cells[2].replaceWith(copyCurrentActive);
-        } else {
-          currentActiveRow.cells[3].replaceWith(copyCurrentActive);
-        }
-      }
-
-      if (direction === 'top') {
-        if (!gameField.rows[0].cells[activeColumn].matches('.active')) {
-          gameField.rows[0].cells[activeColumn].replaceWith(copyCurrentActive);
-        } else if (!gameField.rows[1].cells[activeColumn].matches('.active')) {
-          gameField.rows[1].cells[activeColumn].replaceWith(copyCurrentActive);
-        } else if (!gameField.rows[2].cells[activeColumn].matches('.active')) {
-          gameField.rows[2].cells[activeColumn].replaceWith(copyCurrentActive);
-        } else {
-          gameField.rows[3].cells[activeColumn].replaceWith(copyCurrentActive);
-        }
-      }
-
-      if (direction === 'bottom') {
-        // переробити
-        if (!gameField.rows[3].cells[activeColumn].matches('.active')) {
-          gameField.rows[3].cells[activeColumn].replaceWith(copyCurrentActive);
-        } else if (!gameField.rows[2].cells[activeColumn].matches('.active')) {
-          gameField.rows[2].cells[activeColumn].replaceWith(copyCurrentActive);
-        } else if (!gameField.rows[1].cells[activeColumn].matches('.active')) {
-          gameField.rows[1].cells[activeColumn].replaceWith(copyCurrentActive);
-        } else {
-          gameField.rows[0].cells[activeColumn].replaceWith(copyCurrentActive);
-        }
+        allCells[key].classList =
+          `field-cell field-cell--${allCells[key].textContent}`;
+      } else {
+        allCells[key].textContent = '';
+        allCells[key].classList = 'field-cell';
       }
     }
 
-    const newFieldCells = [...document.querySelectorAll('.active')];
-    const newActiveFieldsArr = [];
+    this.getScore();
+  }
 
-    // переробити
-    for (const key of newFieldCells) {
-      [...gameField.rows].map((element) => {
-        if ([...element.cells].indexOf(key) !== -1) {
-          newActiveFieldsArr.push([
-            [...gameField.rows].indexOf(element),
-            [...element.cells].indexOf(key),
-          ]);
-        }
-      });
-    }
+  transpose(matrix) {
+    const n = matrix.length;
+    const m = matrix[0].length;
 
-    for (const activeCell of newActiveFieldsArr) {
-      const activeRow = activeCell[0];
-      const activeColumn = activeCell[1];
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < m; j++) {
+        const temp = matrix[i][j];
 
-      const currentActiveRow = gameField.rows[activeRow];
-
-      if (direction === 'right') {
-        if (
-          currentActiveRow.cells[1].textContent ===
-            currentActiveRow.cells[0].textContent &&
-          currentActiveRow.cells[0].textContent !== ''
-        ) {
-          currentActiveRow.cells[1].classList.remove(
-            `field-cell--${currentActiveRow.cells[1].textContent}`,
-          );
-
-          currentActiveRow.cells[1].textContent =
-            currentActiveRow.cells[1].textContent * 2;
-
-          currentActiveRow.cells[1].classList.add(
-            `field-cell--${currentActiveRow.cells[1].textContent}`,
-          );
-
-          currentActiveRow.cells[0].textContent = '';
-          currentActiveRow.cells[0].classList = 'field-cell';
-        }
-
-        if (
-          currentActiveRow.cells[2].textContent ===
-            currentActiveRow.cells[1].textContent &&
-          currentActiveRow.cells[1].textContent !== ''
-        ) {
-          currentActiveRow.cells[2].classList.remove(
-            `field-cell--${currentActiveRow.cells[2].textContent}`,
-          );
-
-          currentActiveRow.cells[2].textContent =
-            currentActiveRow.cells[2].textContent * 2;
-
-          currentActiveRow.cells[2].classList.add(
-            `field-cell--${currentActiveRow.cells[2].textContent}`,
-          );
-
-          currentActiveRow.cells[1].textContent = '';
-          currentActiveRow.cells[1].classList = 'field-cell';
-        }
-
-        if (
-          currentActiveRow.cells[3].textContent ===
-            currentActiveRow.cells[2].textContent &&
-          currentActiveRow.cells[2].textContent !== ''
-        ) {
-          currentActiveRow.cells[3].classList.remove(
-            `field-cell--${currentActiveRow.cells[3].textContent}`,
-          );
-
-          currentActiveRow.cells[3].textContent =
-            currentActiveRow.cells[3].textContent * 2;
-
-          currentActiveRow.cells[3].classList.add(
-            `field-cell--${currentActiveRow.cells[3].textContent}`,
-          );
-
-          currentActiveRow.cells[2].textContent = '';
-          currentActiveRow.cells[2].classList = 'field-cell';
-        }
+        matrix[i][j] = matrix[j][i];
+        matrix[j][i] = temp;
       }
-
-      if (direction === 'left') {
-        if (
-          currentActiveRow.cells[0].textContent ===
-            currentActiveRow.cells[1].textContent &&
-          currentActiveRow.cells[1].textContent !== ''
-        ) {
-          currentActiveRow.cells[0].classList.remove(
-            `field-cell--${currentActiveRow.cells[0].textContent}`,
-          );
-
-          currentActiveRow.cells[0].textContent =
-            currentActiveRow.cells[0].textContent * 2;
-
-          currentActiveRow.cells[0].classList.add(
-            `field-cell--${currentActiveRow.cells[0].textContent}`,
-          );
-
-          currentActiveRow.cells[1].textContent = '';
-          currentActiveRow.cells[1].classList = 'field-cell';
-        }
-
-        if (
-          currentActiveRow.cells[1].textContent ===
-            currentActiveRow.cells[2].textContent &&
-          currentActiveRow.cells[2].textContent !== ''
-        ) {
-          currentActiveRow.cells[1].classList.remove(
-            `field-cell--${currentActiveRow.cells[1].textContent}`,
-          );
-
-          currentActiveRow.cells[1].textContent =
-            currentActiveRow.cells[1].textContent * 2;
-
-          currentActiveRow.cells[1].classList.add(
-            `field-cell--${currentActiveRow.cells[1].textContent}`,
-          );
-
-          currentActiveRow.cells[2].textContent = '';
-          currentActiveRow.cells[2].classList = 'field-cell';
-        }
-
-        if (
-          currentActiveRow.cells[2].textContent ===
-            currentActiveRow.cells[3].textContent &&
-          currentActiveRow.cells[3].textContent !== ''
-        ) {
-          currentActiveRow.cells[2].classList.remove(
-            `field-cell--${currentActiveRow.cells[2].textContent}`,
-          );
-
-          currentActiveRow.cells[2].textContent =
-            currentActiveRow.cells[2].textContent * 2;
-
-          currentActiveRow.cells[2].classList.add(
-            `field-cell--${currentActiveRow.cells[2].textContent}`,
-          );
-
-          currentActiveRow.cells[3].textContent = '';
-          currentActiveRow.cells[3].classList = 'field-cell';
-        }
-      }
-
-      if (direction === 'top') {
-        if (
-          gameField.rows[0].cells[activeColumn].textContent ===
-            gameField.rows[1].cells[activeColumn].textContent &&
-          gameField.rows[1].cells[activeColumn].textContent !== ''
-        ) {
-          gameField.rows[0].cells[activeColumn].classList.remove(
-            `field-cell--${gameField.rows[0].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[0].cells[activeColumn].textContent =
-            gameField.rows[0].cells[activeColumn].textContent * 2;
-
-          gameField.rows[0].cells[activeColumn].classList.add(
-            `field-cell--${gameField.rows[0].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[1].cells[activeColumn].textContent = '';
-          gameField.rows[1].cells[activeColumn].classList = 'field-cell';
-        }
-
-        if (
-          gameField.rows[1].cells[activeColumn].textContent ===
-            gameField.rows[2].cells[activeColumn].textContent &&
-          gameField.rows[2].cells[activeColumn].textContent !== ''
-        ) {
-          gameField.rows[1].cells[activeColumn].classList.remove(
-            `field-cell--${gameField.rows[1].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[1].cells[activeColumn].textContent =
-            gameField.rows[1].cells[activeColumn].textContent * 2;
-
-          gameField.rows[1].cells[activeColumn].classList.add(
-            `field-cell--${gameField.rows[1].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[2].cells[activeColumn].textContent = '';
-          gameField.rows[2].cells[activeColumn].classList = 'field-cell';
-        }
-
-        if (
-          gameField.rows[2].cells[activeColumn].textContent ===
-            gameField.rows[3].cells[activeColumn].textContent &&
-          gameField.rows[3].cells[activeColumn].textContent !== ''
-        ) {
-          gameField.rows[2].cells[activeColumn].classList.remove(
-            `field-cell--${gameField.rows[2].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[2].cells[activeColumn].textContent =
-            gameField.rows[2].cells[activeColumn].textContent * 2;
-
-          gameField.rows[2].cells[activeColumn].classList.add(
-            `field-cell--${gameField.rows[2].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[3].cells[activeColumn].textContent = '';
-          gameField.rows[3].cells[activeColumn].classList = 'field-cell';
-        }
-      }
-
-      if (direction === 'bottom') {
-        if (
-          gameField.rows[1].cells[activeColumn].textContent ===
-            gameField.rows[0].cells[activeColumn].textContent &&
-          gameField.rows[0].cells[activeColumn].textContent !== ''
-        ) {
-          gameField.rows[1].cells[activeColumn].classList.remove(
-            `field-cell--${gameField.rows[1].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[1].cells[activeColumn].textContent =
-            gameField.rows[1].cells[activeColumn].textContent * 2;
-
-          gameField.rows[1].cells[activeColumn].classList.add(
-            `field-cell--${gameField.rows[1].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[0].cells[activeColumn].textContent = '';
-          gameField.rows[0].cells[activeColumn].classList = 'field-cell';
-        }
-
-        if (
-          gameField.rows[2].cells[activeColumn].textContent ===
-            gameField.rows[1].cells[activeColumn].textContent &&
-          gameField.rows[1].cells[activeColumn].textContent !== ''
-        ) {
-          gameField.rows[2].cells[activeColumn].classList.remove(
-            `field-cell--${gameField.rows[2].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[2].cells[activeColumn].textContent =
-            gameField.rows[2].cells[activeColumn].textContent * 2;
-
-          gameField.rows[2].cells[activeColumn].classList.add(
-            `field-cell--${gameField.rows[2].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[1].cells[activeColumn].textContent = '';
-          gameField.rows[1].cells[activeColumn].classList = 'field-cell';
-        }
-
-        if (
-          gameField.rows[3].cells[activeColumn].textContent ===
-            gameField.rows[2].cells[activeColumn].textContent &&
-          gameField.rows[2].cells[activeColumn].textContent !== ''
-        ) {
-          gameField.rows[3].cells[activeColumn].classList.remove(
-            `field-cell--${gameField.rows[3].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[3].cells[activeColumn].textContent =
-            gameField.rows[3].cells[activeColumn].textContent * 2;
-
-          gameField.rows[3].cells[activeColumn].classList.add(
-            `field-cell--${gameField.rows[3].cells[activeColumn].textContent}`,
-          );
-
-          gameField.rows[2].cells[activeColumn].textContent = '';
-          gameField.rows[2].cells[activeColumn].classList = 'field-cell';
-        }
-      }
-    }
-
-    let isMove = false;
-
-    for (let i = 0; i < activeFieldsArr.length; i++) {
-      if (newActiveFieldsArr[i].join('') !== activeFieldsArr[i].join('')) {
-        isMove = true;
-      }
-    }
-
-    if (isMove) {
-      this.newCell();
     }
   }
 }
